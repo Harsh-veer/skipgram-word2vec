@@ -32,6 +32,7 @@ def search_dt(dt,ele):
 # later i used online availabe corpus and unfiltered corpus lies in raw.txt
 # "http://www.statmt.org/lm-benchmark/1-billion-word-language-modeling-benchmark-r13output.tar.gz"
 # "https://cloud.google.com/bigquery/public-data/"
+# "http://mattmahoney.net/dc/text8.zip"
 if os.path.exists('./processed.txt') is not True:
 	print ("Processing raw corpus file")
 	f=open("raw.txt",'r+')
