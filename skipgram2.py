@@ -1,16 +1,13 @@
 import numpy as np
 import random
-import parser as parser
 import unigram
+from unigram import parser as parser
 
 def softmax(y):
     return np.exp(y)/np.sum(np.exp(y))
 
-def sgm(y,diff=False):
-    if diff:
-        return np.exp(-y)/(sgm(y)**2)
-    else:
-        return 1/(1+np.exp(-y))
+def sgm(x):
+    return 1/(1+np.exp(-x))
 
 corpus=parser.corpus # entire text
 vocab=parser.vocab # vocab text
@@ -19,46 +16,49 @@ window=3
 contextSize=window-1 # half of this on each side
 featureSize=300
 learning_rate=0.025
-k=15 # for negative sampling
+imp_factor=1e-4  # decrease learning_rate if progress below this
+k=4 # for negative sampling
 
 Wth=np.random.randn(vocabSize,featureSize) # final feature matrix
 Whc=np.random.randn(featureSize,vocabSize)
-mWhc=np.zeros_like(Whc)
-mWth=np.zeros_like(Wth)
 
-def model(target,contexts): # vocabSize,1 , contextSize,vocabSize
-    # forward pass
-    # print ("forward pass")
+def model(target,contexts):
     loss=0
-    hs=np.dot(Wth.T,target) # featureSize,1
+    ind_hs=list(target).index(1)
+    hs=Wth[ind_hs]
 
-    dWhc=np.zeros_like(Whc)
-    dWth=np.zeros_like(Wth)
-
-    wo_U_Wneg=unigram.pick(K=k)
+    wo_U_Wneg=unigram.pick(K=k,contexts=contexts)
     for wo in contexts:
-        wo_U_Wneg.append(parser.getkey(wo,parser.lookup))
-        for wj in wo_U_Wneg:
-            j=parser.vocab.index(wj)
-            inpindex=list(target).index(1)
-            v=np.array(np.matrix(Whc.T[j]).T)
-            term=0
-            if wj==parser.getkey(wo,parser.lookup): # wo is at last position
-                term=1
-                loss+=-np.log(sgm(np.dot(v.T,hs)))
-            else:
-                loss+=-np.log(sgm(-np.dot(v.T,hs)))
-            dWhc.T[j]+=hs.T[0]*float(sgm(np.dot(v.T,hs))-term)
-            dWth[inpindex]+=((v*float(sgm(np.dot(v.T,hs))-term)).T)[0]
+        # print ("chkpt1")
+        wo_U_Wneg.append(wo)
 
-    # print ("going back from model")
-    return loss,dWhc,dWth
+    cnt=0
+    for wj in wo_U_Wneg:
+        # print ("chkpt2")
+        j,waste=parser.search_dt(dt=parser.vocab,ele=wj)
+        v=np.array(np.matrix(Whc.T[j]).T)
+        term=0
+        if cnt>=len(contexts): # wo is at last position
+            term=1
+            loss+=-np.log(sgm(np.dot(v.T,hs)))
+        else:
+            loss += -np.log(sgm(-np.dot(v.T,hs)))
+        Whc.T[j] -= learning_rate * hs.T[0] * float(sgm(np.dot(v.T,hs))-term)
+        Wth[ind_hs] -= learning_rate * ((v * float(sgm(np.dot(v.T,hs))-term)).T)[0]
+        cnt+=1
+
+    return loss
 
 def train():
+    global learning_rate
+    print ("Training...")
     epoch=1
     loss=0
-    while epoch<4:
+    prevLoss=0
+    while True:
+        Loss=0 # loss for an entire epoch
         for i in range(len(corpus)-1):
+            # print ("chkpt3")
             target=np.array(np.matrix(parser.lookup[corpus[i]]).T) # 1 of k for this word in corpus
             beg=int(i-contextSize/2)
             end=int(i+contextSize/2+1)
@@ -67,19 +67,23 @@ def train():
             if end>=len(corpus):
                 end=len(corpus)-1
             contextwords=corpus[beg:end]
-            contextwords.pop(int(len(contextwords)/2))
-            contexts=[]
-            for cw in contextwords:
-                contexts.append(parser.lookup[cw])
-            contexts=np.array(contexts) # contextSize,vocabSize
+            contextwords.pop(contextwords.index(corpus[i]))
+            # contexts=[]
+            # for cw in contextwords:
+            #     contexts.append(parser.lookup[cw])
+            # contexts=np.array(contexts) # contextSize,vocabSize
 
-            loss,dWhc,dWth=model(target=target, contexts=contexts)
-            loss=float(loss/len(contexts))
-            for param, dparam, mem in zip([Whc,Wth],[dWhc,dWth],[mWhc,mWth]):
-                mem += dparam * dparam
-                param += -learning_rate * dparam / np.sqrt(mem + 1e-8)
-
-        if epoch%1==0:
-            print ("epoch ",epoch," loss: ",loss)
-
+            # print ("chkpt4")
+            loss=model(target=target, contexts=contextwords)
+            Loss+=loss
+            # if w_num%100==0: # print loss every some words
+            #     print ("w_num:",w_num," loss:",loss)
+            # w_num+=1
+        Loss/=len(corpus)
+        print ("epoch:",epoch," loss:",Loss, " learning_rate:",learning_rate)
         epoch+=1
+        if Loss-prevLoss<imp_factor:
+            learning_rate-=1e-3
+        prevLoss=Loss
+
+train()
