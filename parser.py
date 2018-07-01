@@ -29,6 +29,9 @@ def search_dt(dt,ele):
 # 	link="https://raw.githubusercontent.com/llSourcell/word_vectors_game_of_thrones-LIVE/master/data/got1.txt"
 # 	ul.request.urlretrieve(link,filename='raw.txt')
 
+# later i used online availabe corpus and unfiltered corpus lies in raw.txt
+# "http://www.statmt.org/lm-benchmark/1-billion-word-language-modeling-benchmark-r13output.tar.gz"
+# "https://cloud.google.com/bigquery/public-data/"
 if os.path.exists('./processed.txt') is not True:
 	print ("Processing raw corpus file")
 	f=open("raw.txt",'r+')
