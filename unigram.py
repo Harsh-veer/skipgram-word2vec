@@ -1,38 +1,107 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import numpy as np
+import re
+import pandas as pd
+import urllib as ul
+import os
 import random
-import parser
 
-print ("Creating unigram probability table")
-train_words_pow=0
-d1,power=0.75,0.75
-table_size=int(1e8)
-table=[] # this table stores indices to pick words from vocab
-for a in parser.vocab_cn:
-    train_words_pow+=a**power
-i=0
-d1=(parser.vocab_cn[i]**power)/train_words_pow
-for a in range(table_size):
-    table.append(i)
-    if float(a/table_size) > d1:
-        i+=1
-        d1+=(parser.vocab_cn[i]**power)/train_words_pow
-    if i>=parser.vocabSize:
-        i=parser.vocabSize-1
+max_corpus=500000 # 500k, max_corpus size before subsampling
 
-def pick(K,contexts):
-    Wneg=[]
-    # cw=[]
-    # for c in contexts:
-    #     cw.append(parser.getkey(c,parser.lookup))
-    for k in range(K):
-        flag=True
-        while flag:
-            pos=table[random.randint(0,table_size-1)] # index of word in vocab
-            chosenword=parser.vocab[pos]
-            try:
-                if contexts.index(chosenword):
-                    continue
-            except ValueError:
-                Wneg.append(chosenword)
-                flag=False
-    return Wneg
+def search_dt(dt,ele):
+	beg=0
+	end=len(dt)-1
+	while end>=beg:
+		mid=int((beg+end)/2)
+		if dt[mid]==ele:
+			return mid,True
+		elif dt[mid]<ele:
+			beg=mid+1
+		else:
+			end=mid-1
+	return beg,False
+
+# if os.path.exists('./raw.txt') is not True: # fetching file from Siraj Raval's github "github.com/llSourcell"
+# 	print ("Fetching corpus file")
+# 	link="https://raw.githubusercontent.com/llSourcell/word_vectors_game_of_thrones-LIVE/master/data/got1.txt"
+# 	ul.request.urlretrieve(link,filename='raw.txt')
+
+if os.path.exists('./processed.txt') is not True:
+	print ("Processing raw corpus file")
+	f=open("raw.txt",'r+')
+	l=f.seek(0,2)
+	if l>max_corpus:
+		l=max_corpus
+	f.seek(0,0)
+	data=""
+	for i in range(l):
+		c=f.read(1)
+		if (re.match('\w',c) or c==" "):
+			data+=c
+	f.close()
+	f=open("processed.txt",'w')
+	f.write(data)
+	f.close()
+
+print ("Creating vocab")
+f=open("processed.txt","r")
+l=f.seek(0,2)
+f.seek(0,0)
+corpus=[]
+vocab=[]
+vocab_cn=[]
+word=""
+for i in range(l):
+	c=f.read(1)
+	if re.match('\w',c):
+		word+=c
+	if c==" " or c=="\n":
+		corpus.append(word)
+		ind,ex=search_dt(vocab,word)
+		if ex is True:
+			vocab_cn[ind]+=1
+		else:
+			vocab.insert(ind,word)
+			vocab_cn.insert(ind,1)
+		word=""
+
+"""subsampling"""
+prev_size=len(corpus)
+print ("Total corpus:",prev_size)
+print ("subsampling")
+threshold=1e-3
+for i in reversed(range(len(corpus))):
+	freq_ind,pres=search_dt(vocab,corpus[i])
+	freqW=vocab_cn[freq_ind]/prev_size
+	pw=1-np.sqrt(threshold/freqW)
+	if random.random()<pw: # choose random b/w 0,1 if greater than pw remove word
+		corpus.pop(i)
+
+
+vocabSize=len(vocab)
+lookup=dict()
+li=0
+# for i in vocab:
+#     t=[]
+#     for j in vocab:
+#         if i==j:
+#             t.append(1)
+#         else:
+#             t.append(0)
+#     lookup[i]=t
+
+for i in vocab:
+	lookup[i]=np.zeros([vocabSize])
+	lookup[i][li]=1
+	li+=1
+
+print ("corpus:",len(corpus))
+print ("vocab:",vocabSize)
+
+# def getkey(arr,dic):
+#     for k in dic.keys():
+#         if list(dic[k])==list(arr):
+#             return k
