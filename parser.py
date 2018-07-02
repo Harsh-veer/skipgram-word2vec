@@ -9,7 +9,7 @@ import urllib as ul
 import os
 import random
 
-max_corpus=1000000 # 1000k
+max_corpus=900000 # 900k
 
 def search_dt(dt,ele):
 	beg=0
