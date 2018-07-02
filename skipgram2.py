@@ -16,7 +16,7 @@ window=3
 contextSize=window-1 # half of this on each side
 featureSize=300
 learning_rate=0.025
-imp_factor=1e-4  # decrease learning_rate if progress below this
+imp_factor=1e-6  # decrease learning_rate if progress below this
 k=4 # for negative sampling
 
 Wth=np.random.randn(vocabSize,featureSize) # final feature matrix
@@ -55,7 +55,7 @@ def train():
     epoch=1
     loss=0
     prevLoss=0
-    while True:
+    while True and learning_rate>=0:
         Loss=0 # loss for an entire epoch
         for i in range(len(corpus)-1):
             # print ("chkpt3")
@@ -83,7 +83,7 @@ def train():
         print ("epoch:",epoch," loss:",Loss, " learning_rate:",learning_rate)
         epoch+=1
         if Loss-prevLoss<imp_factor:
-            learning_rate-=1e-3
+            learning_rate-=1e-4
         prevLoss=Loss
 
 train()
