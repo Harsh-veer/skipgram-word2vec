@@ -12,12 +12,12 @@ def sgm(x):
 corpus=parser.corpus # entire text
 vocab=parser.vocab # vocab text
 vocabSize=parser.vocabSize
-window=3
+window=5
 contextSize=window-1 # half of this on each side
 featureSize=300
 learning_rate=0.025
-imp_factor=1e-6  # decrease learning_rate if progress below this
-k=4 # for negative sampling
+imp_factor=1e-3  # decrease learning_rate if progress below this
+k=5 # for negative sampling
 
 Wth=np.random.randn(vocabSize,featureSize) # final feature matrix
 Whc=np.random.randn(featureSize,vocabSize)
@@ -54,7 +54,7 @@ def train():
     print ("Training...")
     epoch=1
     loss=0
-    prevLoss=0
+    prevLoss=1000
     while True and learning_rate>=0:
         Loss=0 # loss for an entire epoch
         for i in range(len(corpus)-1):
@@ -82,7 +82,7 @@ def train():
         Loss/=len(corpus)
         print ("epoch:",epoch," loss:",Loss, " learning_rate:",learning_rate)
         epoch+=1
-        if Loss-prevLoss<imp_factor:
+        if prevLoss-Loss<imp_factor:
             learning_rate-=1e-4
         prevLoss=Loss
 
