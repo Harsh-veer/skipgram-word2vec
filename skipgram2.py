@@ -16,7 +16,7 @@ window=5
 contextSize=window-1 # half of this on each side
 featureSize=300
 learning_rate=0.025
-imp_factor=1e-3  # decrease learning_rate if progress below this
+imp_factor=1e-6  # decrease learning_rate if progress below this
 k=5 # for negative sampling
 
 Wth=np.random.randn(vocabSize,featureSize) # final feature matrix
@@ -59,7 +59,7 @@ def train():
         Loss=0 # loss for an entire epoch
         for i in range(len(corpus)-1):
             # print ("chkpt3")
-            target=np.array(np.matrix(parser.lookup[corpus[i]]).T) # 1 of k for this word in corpus
+            target=parser.lookup[corpus[i]] # an array, 1 of k for this word in corpus
             beg=int(i-contextSize/2)
             end=int(i+contextSize/2+1)
             if beg<0:
@@ -85,5 +85,3 @@ def train():
         if prevLoss-Loss<imp_factor:
             learning_rate-=1e-4
         prevLoss=Loss
-
-train()
