@@ -19,17 +19,10 @@ for a in range(table_size):
     if i>=parser.vocabSize:
         i=parser.vocabSize-1
 
-def pick(K,contexts):
+def pick(K):
     Wneg=[]
     for k in range(K):
-        flag=True
-        while flag:
-            pos=table[random.randint(0,table_size-1)] # index of word in vocab
-            chosenword=parser.vocab[pos]
-            try:
-                if contexts.index(chosenword):
-                    continue
-            except ValueError:
-                Wneg.append(chosenword)
-                flag=False
+        pos=table[random.randint(0,table_size-1)] # index of word in vocab
+        chosenword=parser.vocab[pos]
+        Wneg.append(chosenword)
     return Wneg
