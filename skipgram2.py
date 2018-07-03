@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import time
 import unigram
 from unigram import parser as parser
 
@@ -56,6 +57,7 @@ def train():
     loss=0
     prevLoss=1000
     while True and learning_rate>=0:
+        start=time.time()
         Loss=0 # loss for an entire epoch
         for i in range(len(corpus)-1):
             # print ("chkpt3")
@@ -68,20 +70,17 @@ def train():
                 end=len(corpus)-1
             contextwords=corpus[beg:end]
             contextwords.pop(contextwords.index(corpus[i]))
-            # contexts=[]
-            # for cw in contextwords:
-            #     contexts.append(parser.lookup[cw])
-            # contexts=np.array(contexts) # contextSize,vocabSize
-
             # print ("chkpt4")
             loss=model(target=target, contexts=contextwords)
             Loss+=loss
-            # if w_num%100==0: # print loss every some words
-            #     print ("w_num:",w_num," loss:",loss)
-            # w_num+=1
-        Loss/=len(corpus)
-        print ("epoch:",epoch," loss:",Loss, " learning_rate:",learning_rate)
+        Loss=float(Loss/len(corpus))
+        end=time.time()
+        elapsed=time.gmtime(end-start)
+        elapsed=time.strftime("%M:%S",elapsed)
+        print ("epoch:%d"%epoch, "loss:%.4f"%Loss, "lrate:%f"%learning_rate, "time=%s"%elapsed)
         epoch+=1
         if prevLoss-Loss<imp_factor:
             learning_rate-=1e-4
         prevLoss=Loss
+
+train()
