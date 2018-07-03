@@ -1,7 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import numpy as np
 import re
 import pandas as pd
@@ -9,9 +5,9 @@ import urllib as ul
 import os
 import random
 
-max_corpus=900000 # 900k
+max_corpus=900000 # 900k, max_corpus size before subsampling
 
-def search_dt(dt,ele):
+def search_dt(dt,ele): # binary search
 	beg=0
 	end=len(dt)-1
 	while end>=beg:
@@ -24,16 +20,7 @@ def search_dt(dt,ele):
 			end=mid-1
 	return beg,False
 
-# if os.path.exists('./raw.txt') is not True: # fetching file from Siraj Raval's github "github.com/llSourcell"
-# 	print ("Fetching corpus file")
-# 	link="https://raw.githubusercontent.com/llSourcell/word_vectors_game_of_thrones-LIVE/master/data/got1.txt"
-# 	ul.request.urlretrieve(link,filename='raw.txt')
-
-# later i used online availabe corpus and unfiltered corpus lies in raw.txt
-# "http://www.statmt.org/lm-benchmark/1-billion-word-language-modeling-benchmark-r13output.tar.gz"
-# "https://cloud.google.com/bigquery/public-data/"
-# "http://mattmahoney.net/dc/text8.zip"
-if os.path.exists('./processed.txt') is not True:
+if os.path.exists('./processed.txt') is not True: # cleaning raw data file
 	print ("Processing raw corpus file")
 	f=open("raw.txt",'r+')
 	l=f.seek(0,2)
@@ -43,8 +30,6 @@ if os.path.exists('./processed.txt') is not True:
 	data=""
 	for i in range(l):
 		c=f.read(1)
-		if c==".":
-			c=" "
 		if (re.match('\w',c) or c==" "):
 			data+=c
 	f.close()
@@ -53,7 +38,7 @@ if os.path.exists('./processed.txt') is not True:
 	f.close()
 
 print ("Creating vocab")
-f=open("processed.txt","r")
+f=open("processed.txt","r") # creating sorted vocabulary from cleaned up file
 l=f.seek(0,2)
 f.seek(0,0)
 corpus=[]
@@ -64,7 +49,7 @@ for i in range(l):
 	c=f.read(1)
 	if re.match('\w',c):
 		word+=c
-	if c==" " or c=="\n":
+	if c==" ":
 		corpus.append(word)
 		ind,ex=search_dt(vocab,word)
 		if ex is True:
@@ -74,8 +59,9 @@ for i in range(l):
 			vocab_cn.insert(ind,1)
 		word=""
 
-"""subsampling"""
-prev_size=len(corpus)
+prev_size=len(corpus) # subsampling
+print ("Total corpus:",prev_size)
+print ("subsampling")
 threshold=1e-3
 for i in reversed(range(len(corpus))):
 	freq_ind,pres=search_dt(vocab,corpus[i])
@@ -86,20 +72,12 @@ for i in reversed(range(len(corpus))):
 
 
 vocabSize=len(vocab)
-lookup=dict()
+lookup=dict() # lookup table containing 1 of K for words in vocab
+li=0
 for i in vocab:
-    t=[]
-    for j in vocab:
-        if i==j:
-            t.append(1)
-        else:
-            t.append(0)
-    lookup[i]=t
+	lookup[i]=np.zeros([vocabSize])
+	lookup[i][li]=1
+	li+=1
 
-print ("corpus: ",len(corpus))
-print ("vocab: ",vocabSize)
-
-def getkey(arr,dic):
-    for k in dic.keys():
-        if list(dic[k])==list(arr):
-            return k
+print ("corpus:",len(corpus))
+print ("vocab:",vocabSize)
