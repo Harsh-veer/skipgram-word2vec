@@ -13,11 +13,11 @@ def sgm(x):
 corpus=parser.corpus # entire text
 vocab=parser.vocab # vocab text
 vocabSize=parser.vocabSize
-window=5
+window=3
 contextSize=window-1 # half of this on each side
 featureSize=300
 learning_rate=0.025
-imp_factor=1e-6  # decrease learning_rate if progress below this
+imp_factor=1e-5  # decrease learning_rate if progress below this
 k=5 # for negative sampling
 
 Wth=np.random.randn(vocabSize,featureSize) # final feature matrix
@@ -28,7 +28,7 @@ def model(target,contexts):
     ind_hs=list(target).index(1)
     hs=Wth[ind_hs]
 
-    wo_U_Wneg=unigram.pick(K=k,contexts=contexts)
+    wo_U_Wneg=unigram.pick(K=k*len(contexts)) # k:1 ratio b/w positive and negative samples
     for wo in contexts:
         # print ("chkpt1")
         wo_U_Wneg.append(wo)
