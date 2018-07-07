@@ -4,48 +4,41 @@ import time
 import unigram
 from unigram import parser as parser
 
-def softmax(y):
-    return np.exp(y)/np.sum(np.exp(y))
-
 def sgm(x):
     return 1/(1+np.exp(-x))
 
 corpus=parser.corpus # entire text
 vocab=parser.vocab # vocab text
-vocabSize=parser.vocabSize
 window=3
 contextSize=window-1 # half of this on each side
-featureSize=300
-learning_rate=0.025
-imp_factor=1e-5  # decrease learning_rate if progress below this
-k=5 # for negative sampling
+featureSize=50
+learning_rate=0.1
+imp_factor=1e-4  # decrease learning_rate if progress below this
+k=3 # for negative sampling
 
-Wth=np.random.randn(vocabSize,featureSize) # final feature matrix
-Whc=np.random.randn(featureSize,vocabSize)
+Wth=np.random.randn(len(vocab),featureSize) # final feature matrix
+Whc=np.random.randn(featureSize,len(vocab))
 
 def model(target,contexts):
     loss=0
-    ind_hs=list(target).index(1)
+    ind_hs,waste=parser.search_dt(dt=parser.vocab,ele=target)
     hs=Wth[ind_hs]
 
     wo_U_Wneg=unigram.pick(K=k*len(contexts)) # k:1 ratio b/w positive and negative samples
     for wo in contexts:
-        # print ("chkpt1")
-        wo_U_Wneg.append(wo)
+        wo_U_Wneg.append((wo,1))
 
     cnt=0
-    for wj in wo_U_Wneg:
+    for wj,label in wo_U_Wneg:
         # print ("chkpt2")
         j,waste=parser.search_dt(dt=parser.vocab,ele=wj)
         v=np.array(np.matrix(Whc.T[j]).T)
-        term=0
-        if cnt>=len(contexts): # wo is at last position
-            term=1
-            loss+=-np.log(sgm(np.dot(v.T,hs)))
+        if label==1:
+            loss += -np.log(sgm(np.dot(v.T,hs)))
         else:
             loss += -np.log(sgm(-np.dot(v.T,hs)))
-        Whc.T[j] -= learning_rate * hs.T[0] * float(sgm(np.dot(v.T,hs))-term)
-        Wth[ind_hs] -= learning_rate * ((v * float(sgm(np.dot(v.T,hs))-term)).T)[0]
+        Whc.T[j] -= learning_rate * hs.T[0] * float(sgm(np.dot(v.T,hs))-label)
+        Wth[ind_hs] -= learning_rate * ((v * float(sgm(np.dot(v.T,hs))-label)).T)[0]
         cnt+=1
 
     return loss
@@ -61,7 +54,7 @@ def train():
         Loss=0 # loss for an entire epoch
         for i in range(len(corpus)-1):
             # print ("chkpt3")
-            target=parser.lookup[corpus[i]] # an array, 1 of k for this word in corpus
+            target=corpus[i]
             beg=int(i-contextSize/2)
             end=int(i+contextSize/2+1)
             if beg<0:
@@ -69,7 +62,7 @@ def train():
             if end>=len(corpus):
                 end=len(corpus)-1
             contextwords=corpus[beg:end]
-            contextwords.pop(contextwords.index(corpus[i]))
+            contextwords.pop(contextwords.index(target))
             # print ("chkpt4")
             loss=model(target=target, contexts=contextwords)
             Loss+=loss
@@ -80,7 +73,5 @@ def train():
         print ("epoch:%d"%epoch, "loss:%.4f"%Loss, "lrate:%f"%learning_rate, "time=%s"%elapsed)
         epoch+=1
         if prevLoss-Loss<imp_factor:
-            learning_rate-=1e-4
+            learning_rate-=1e-3
         prevLoss=Loss
-
-train()
