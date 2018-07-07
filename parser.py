@@ -5,7 +5,7 @@ import urllib as ul
 import os
 import random
 
-max_corpus=900000 # 900k, max_corpus size before subsampling
+max_corpus=10000000 # 10M, max_corpus size before subsampling, including spaces
 
 def search_dt(dt,ele): # binary search
 	beg=0
@@ -65,19 +65,12 @@ print ("subsampling")
 threshold=1e-3
 for i in reversed(range(len(corpus))):
 	freq_ind,pres=search_dt(vocab,corpus[i])
-	freqW=vocab_cn[freq_ind]/prev_size
+	freqW=vocab_cn[freq_ind]/len(corpus)
 	pw=1-np.sqrt(threshold/freqW)
 	if random.random()<pw: # choose random b/w 0,1 if greater than pw remove word
 		corpus.pop(i)
+		vocab_cn[freq_ind]=vocab_cn[freq_ind]-1
 
-
-vocabSize=len(vocab)
-lookup=dict() # lookup table containing 1 of K for words in vocab
-li=0
-for i in vocab:
-	lookup[i]=np.zeros([vocabSize])
-	lookup[i][li]=1
-	li+=1
-
+corpus=corpus[1:]
 print ("corpus:",len(corpus))
-print ("vocab:",vocabSize)
+print ("vocab:",len(vocab))
