@@ -4,6 +4,7 @@ import pandas as pd
 import urllib as ul
 import os
 import random
+import progressbar
 
 max_corpus=10000000 # 10M, max_corpus size before subsampling, including spaces
 
@@ -62,15 +63,19 @@ for i in range(l):
 prev_size=len(corpus) # subsampling
 print ("Total corpus:",prev_size)
 print ("subsampling")
-threshold=1e-3
-for i in reversed(range(len(corpus))):
-	freq_ind,pres=search_dt(vocab,corpus[i])
-	freqW=vocab_cn[freq_ind]/len(corpus)
-	pw=1-np.sqrt(threshold/freqW)
-	if random.random()<pw: # choose random b/w 0,1 if greater than pw remove word
-		corpus.pop(i)
-		vocab_cn[freq_ind]=vocab_cn[freq_ind]-1
+threshold=1e-5
+with progressbar.ProgressBar(max_value=len(corpus)) as bar:
+	for i in reversed(range(len(corpus))):
+		freq_ind,pres=search_dt(vocab,corpus[i])
+		fractW=vocab_cn[freq_ind]/len(corpus)
+		pw=(np.sqrt(fractW/threshold)+1)*(threshold/fractW)
+		if random.random()<pw: # choose random b/w 0,1 if greater than pw remove word
+			corpus.pop(i)
+			vocab_cn[freq_ind]-=1
+		bar.update(i)
 
+
+vocab_size=len(vocab)
 corpus=corpus[1:]
 print ("corpus:",len(corpus))
-print ("vocab:",len(vocab))
+print ("vocab:",vocab_size)
