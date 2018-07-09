@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import parser
+import progressbar
 
 print ("Creating unigram probability table")
 train_words_pow=0
@@ -11,13 +12,15 @@ for a in parser.vocab_cn:
     train_words_pow+=a**power
 i=0
 d1=(parser.vocab_cn[i]**power)/train_words_pow
-for a in range(table_size):
-    table.append(i)
-    if float(a/table_size) > d1:
-        i+=1
-        d1+=(parser.vocab_cn[i]**power)/train_words_pow
-    if i>=len(parser.vocab):
-        i=len(parser.vocab)-1
+with progressbar.ProgressBar(max_value=table_size) as bar:
+    for a in range(table_size):
+        table.append(i)
+        if float(a/table_size) > d1:
+            i+=1
+            d1+=(parser.vocab_cn[i]**power)/train_words_pow
+        if i>=parser.vocab_size:
+            i=parser.vocab_size-1
+        bar.update(a)
 
 def pick(K):
     Wneg=[]
