@@ -1,6 +1,7 @@
 #define MAX_WORD_LENGTH 15
-#define MAX_VOCAB_SIZE 50000000
+#define MAX_VOCAB_SIZE 1000000 //1M
 
+const char file_name[10000];
 long long int file_size;
 struct vocab_word{
   char *word;
@@ -11,7 +12,7 @@ long long int vocab_size = 0;
 const int vocab_hash_size = 30000000;
 int *vocab_hash;
 long long train_words = 0;
-int min_count = 3;
+int min_count = 5;
 
 int getHash(char *word){
   unsigned long long int hash = 0;
@@ -115,7 +116,7 @@ void sortVocab(){
 
 void VocabFromTrainFile(){
   FILE *fin;
-  fin = fopen("raw.txt","r");
+  fin = fopen(file_name,"r");
   if (fin==NULL){
     printf("Training file not found\n");
     exit(0);
@@ -124,7 +125,7 @@ void VocabFromTrainFile(){
   file_size = (long long int)ftell(fin);
   fseek(fin,0,SEEK_SET);
 
-  printf("Reading file, creating vocabulary...\n");
+  printf("Reading file %s, creating vocabulary...\n",file_name);
   createVocab(fin);
   sortVocab();
   printf("Vocab:%lld\n",vocab_size);
