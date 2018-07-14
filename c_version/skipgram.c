@@ -8,16 +8,16 @@
 #define MAX_SENTENCE_LENGTH 1000
 
 const int window = 5;
-const long long int feature_size = 100;
+const long long int feature_size = 50;
 double alpha = 0.025, starting_alpha = 0.0;
 const int negK = 5;
 const float thresh = 0.001;
 float *W1, *W2;
 int next_random = 1;
-int num_threads = 12;
+int num_threads = 15;
 int word_count_actual = 0;
 int iter = 5;
-int classes = 100;
+int classes = 1000;
 
 float sgm(float x){
   if (x > 10) return 1.0;
@@ -51,7 +51,7 @@ void *trainThread(void *id){
   unsigned long long next_random = (long long)id;
   float f,g;
   float *de = (float *)calloc(feature_size, sizeof(float)); // stores derivative of W2, and some other products
-  FILE *fn = fopen("raw.txt","r");
+  FILE *fn = fopen(file_name,"r");
   fseek(fn, file_size/num_threads * (long long)id, SEEK_SET);
   while (1){
     // printf("chkpt4\n");
@@ -108,7 +108,7 @@ void *trainThread(void *id){
           }else{
             next_random = next_random * (unsigned long long)25214903917 + 11;
             long long indx  = (next_random >> 16) % table_size;
-            target = table[indx]; // <--- caused segmentation error
+            target = table[indx]; // <--- caused segmentation error, due to data type issues in unigram.h
             if (target==0) target = next_random % (vocab_size - 1) + 1;
             if (target==word) continue;
             label = 0;
@@ -120,7 +120,7 @@ void *trainThread(void *id){
           for (c=0;c<feature_size;c++) de[c] += g * W2[c + l2];
           for (c=0;c<feature_size;c++) W2[c + l2] += g * W1[c + l1];
         }
-        for (c=0;c<feature_size;c++) W1[c + l1] += de[c];
+        for (c=0;c<feature_size;c++) W1[c + l1] += de[c]; // cumulative update
       }
     }
     sentence_position++;
@@ -136,7 +136,7 @@ void *trainThread(void *id){
 
 void trainNet(){
   long long int a, b;
-    starting_alpha = alpha;
+  starting_alpha = alpha;
   pthread_t *threads = (pthread_t *)malloc(num_threads * sizeof(pthread_t));
   VocabFromTrainFile();
   initNet();
@@ -145,7 +145,7 @@ void trainNet(){
   for (a = 0; a < num_threads; a++) pthread_create(&threads[a], NULL, trainThread, (void *)a);
   for (a = 0; a < num_threads; a++) pthread_join(threads[a], NULL);
 
-  printf("Training done, saving embeddings to file\n");
+  printf("Training done, saving embeddings\n");
   FILE *fo;
   fo = fopen("embeddings", "w");
   fprintf(fo, "%lld %lld\n",vocab_size, feature_size);
@@ -196,6 +196,7 @@ void trainNet(){
         cl[c] = closeid;
       }
     }
+    printf("Saving K-means\n");
     for (a = 0; a < vocab_size; a++) fprintf(fo, "%s %d\n", vocab[a].word, cl[a]);
     free(centcn);
     free(cent);
@@ -205,6 +206,8 @@ void trainNet(){
 }
 
 int main(int *argc, int **argv){
+  strcpy((char *)file_name, "./corpus_dataset/processed");
+
   vocab = (struct vocab_word *)calloc(MAX_VOCAB_SIZE, sizeof(struct vocab_word));
   int i=0;
   for (i=0;i<MAX_VOCAB_SIZE;i++){
