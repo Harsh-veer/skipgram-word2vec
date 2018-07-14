@@ -29,10 +29,10 @@ void initNet(){
   printf("Initializing network\n");
   int x = posix_memalign((void **)&W1, 128, vocab_size * feature_size * sizeof(float));
   int y = posix_memalign((void **)&W2, 128, vocab_size * feature_size * sizeof(float));
-  // storing weight matrices in linear arrays instead of 2D, as indexing speed is better compared to 2D arrays
+
   for(x=0;x<vocab_size;x++)
     for(y=0;y<feature_size;y++)
-      W2[x * feature_size + y] = 0; // traversing through 1D array storing 2D data
+      W2[x * feature_size + y] = 0;
 
   for(x=0;x<vocab_size;x++){
     for(y=0;y<feature_size;y++){
@@ -70,8 +70,8 @@ void *trainThread(void *id){
         word_count++;
         if (word == 0)break;
         float ran = (sqrt(vocab[word].cnt/(thresh * train_words)) + 1) * (thresh * train_words) / vocab[word].cnt;
-        next_random = next_random * (unsigned long long)25214903917 + 11;
-        if(ran < (next_random & 0xFFFF) / (float)65536) continue;
+        next_random = next_random * (unsigned long long)25214903917 + 11; // generates pseudo-random number
+        if(ran < (next_random & 0xFFFF) / (float)65536) continue; // RHS of inequality ensures that random number is b/w [0,1) (actually here, min=0 max=65535/65536=0.999)
         sen[sentence_length] = word;
         sentence_length++;
         if (sentence_length >= MAX_SENTENCE_LENGTH) break;
@@ -88,17 +88,17 @@ void *trainThread(void *id){
       fseek(fn, file_size/(long long)num_threads * (long long)id, SEEK_SET);
       continue;
     }
-    word = sen[sentence_position];
+    word = sen[sentence_position]; // choosing target word whose contexts are to be trained as output along with negative samples
     if (word==-1) continue;
     for(c=0; c<feature_size;c++) de[c]=0;
     next_random = next_random * (unsigned long long)25214903917 + 11;
-    b = next_random % window;
+    b = next_random % window; // context size is not constant, its random between [1,5]
     for (a = b; a < window*2 + 1 - b; a++) if(a!=window){
-      c = sentence_position - window + a;
+      c = sentence_position - window + a; // picking a context word
       if (c<0 || c>=sentence_length) continue;
       last_word = sen[c];
       if (last_word == -1)continue;
-      l1 = last_word * feature_size;
+      l1 = last_word * feature_size; // column or row corresponding to last word (i.e. context word)
       for (c=0;c<feature_size;c++)de[c]=0;
       if (negK > 0){
         for(d=0;d<negK + 1;d++){ // +1 for actual context, rest for negative samples
@@ -108,19 +108,19 @@ void *trainThread(void *id){
           }else{
             next_random = next_random * (unsigned long long)25214903917 + 11;
             long long indx  = (next_random >> 16) % table_size;
-            target = table[indx]; // <--- caused segmentation error, due to data type issues in unigram.h
+            target = table[indx]; // <--- caused segmentation error
             if (target==0) target = next_random % (vocab_size - 1) + 1;
             if (target==word) continue;
             label = 0;
           }
-          l2 = target * feature_size;
+          l2 = target * feature_size; // column or row corresponding to target (i.e. negative samples)
           f = 0;
-          for (c=0;c<feature_size;c++) f += W1[c + l1] * W2[c + l2];// picking a specific column(or row, as per visualization), from each of W1,W2
+          for (c=0;c<feature_size;c++) f += W1[c + l1] * W2[c + l2];
           g = ( label - sgm(f) ) * alpha;
           for (c=0;c<feature_size;c++) de[c] += g * W2[c + l2];
           for (c=0;c<feature_size;c++) W2[c + l2] += g * W1[c + l1];
         }
-        for (c=0;c<feature_size;c++) W1[c + l1] += de[c]; // cumulative update
+        for (c=0;c<feature_size;c++) W1[c + l1] += de[c];
       }
     }
     sentence_position++;
