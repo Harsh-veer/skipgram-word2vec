@@ -29,10 +29,10 @@ void initNet(){
   printf("Initializing network\n");
   int x = posix_memalign((void **)&W1, 128, vocab_size * feature_size * sizeof(float));
   int y = posix_memalign((void **)&W2, 128, vocab_size * feature_size * sizeof(float));
-
+  // storing weight matrices in linear arrays instead of 2D, as indexing speed is better compared to 2D arrays
   for(x=0;x<vocab_size;x++)
     for(y=0;y<feature_size;y++)
-      W2[x * feature_size + y] = 0;
+      W2[x * feature_size + y] = 0; // traversing through 1D array storing 2D data
 
   for(x=0;x<vocab_size;x++){
     for(y=0;y<feature_size;y++){
@@ -115,7 +115,7 @@ void *trainThread(void *id){
           }
           l2 = target * feature_size;
           f = 0;
-          for (c=0;c<feature_size;c++) f += W1[c + l1] * W2[c + l2];
+          for (c=0;c<feature_size;c++) f += W1[c + l1] * W2[c + l2];// picking a specific column(or row, as per visualization), from each of W1,W2
           g = ( label - sgm(f) ) * alpha;
           for (c=0;c<feature_size;c++) de[c] += g * W2[c + l2];
           for (c=0;c<feature_size;c++) W2[c + l2] += g * W1[c + l1];
