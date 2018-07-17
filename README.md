@@ -1,5 +1,5 @@
 # Skipgram-word2vec
-Skipgram word2vec implementation in python, using numpy
+Skipgram word2vec implementation in C.
 It implements negative sampling and subsampling and uses unigram probability distribution to pick "negative samples".
 
 ### Datasets to train this network
