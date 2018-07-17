@@ -8,16 +8,16 @@
 #define MAX_SENTENCE_LENGTH 1000
 
 const int window = 5;
-const long long int feature_size = 50;
+const long long int feature_size = 100;
 double alpha = 0.025, starting_alpha = 0.0;
 const int negK = 5;
-const float thresh = 0.001;
+const float thresh = 0.0001;
 float *W1, *W2;
 int next_random = 1;
 int num_threads = 15;
 int word_count_actual = 0;
 int iter = 5;
-int classes = 1000;
+int classes = 5000;
 
 float sgm(float x){
   if (x > 10) return 1.0;
@@ -36,7 +36,7 @@ void initNet(){
 
   for(x=0;x<vocab_size;x++){
     for(y=0;y<feature_size;y++){
-      next_random= next_random* (unsigned long long)25214903917 + 11;
+      next_random = next_random* (unsigned long long)25214903917 + 11;
       W1[x * feature_size + y] = ((next_random& 0xFFFF)/(float)65536) - 0.5;
     }
   }
@@ -107,8 +107,7 @@ void *trainThread(void *id){
             label = 1;
           }else{
             next_random = next_random * (unsigned long long)25214903917 + 11;
-            long long indx  = (next_random >> 16) % table_size;
-            target = table[indx]; // <--- caused segmentation error
+            target = table[ (next_random >> 16) % table_size ]; // shifted 16 bits as next_random is 64 bits, but an index of table is 32 bits
             if (target==0) target = next_random % (vocab_size - 1) + 1;
             if (target==word) continue;
             label = 0;
@@ -150,8 +149,8 @@ void trainNet(){
   fo = fopen("embeddings", "w");
   fprintf(fo, "%lld %lld\n",vocab_size, feature_size);
   for (a=0;a<vocab_size;a++){
-    fprintf(fo,"%s ",vocab[a].word);
-    for(b=0;b<feature_size;b++)fprintf(fo, "%lf", W1[a * feature_size + b]);
+    fprintf(fo,"%s",vocab[a].word);
+    for(b=0;b<feature_size;b++)fprintf(fo, " %lf", W1[a * feature_size + b]);
     fprintf(fo, "\n");
   }
 
@@ -199,8 +198,8 @@ void trainNet(){
     printf("Saving K-means\n");
     for (a = 0; a < vocab_size; a++) fprintf(fo, "%s %d\n", vocab[a].word, cl[a]);
     free(centcn);
-    free(cent);
     free(cl);
+    free(cent);
 
     fclose(fo);
 }
