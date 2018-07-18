@@ -140,7 +140,7 @@ void trainNet(){
   VocabFromTrainFile();
   initNet();
   if (negK > 0) initUnigram();
-    printf("Training\n");
+  printf("Training\n");
   for (a = 0; a < num_threads; a++) pthread_create(&threads[a], NULL, trainThread, (void *)a);
   for (a = 0; a < num_threads; a++) pthread_join(threads[a], NULL);
 
@@ -200,7 +200,6 @@ void trainNet(){
     free(centcn);
     free(cl);
     free(cent);
-
     fclose(fo);
 }
 
