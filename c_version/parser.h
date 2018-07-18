@@ -97,9 +97,9 @@ void sortVocab(){
   int a,size;
   unsigned int hash;
   qsort(&vocab[1], vocab_size-1, sizeof(struct vocab_word), vocabCompare);
-  for (a=0; a<vocab_hash_size;a++) vocab_hash[a] = -1;
+  for (a=0; a<vocab_hash_size;a++) vocab_hash[a] = -1;// computing all hashes again, as after sorting they're not valid anymore
   size=vocab_size;
-  train_words = 0;
+  train_words = 0;// contains total words
   for (a=0; a<size; a++){
     if ( (vocab[a].cnt < min_count) && (a!=0) ){
       vocab_size--;
@@ -111,7 +111,7 @@ void sortVocab(){
       train_words += vocab[a].cnt;
     }
   }
-  vocab = (struct vocab_word *)realloc(vocab, (vocab_size + 1) * sizeof(struct vocab_word));
+  vocab = (struct vocab_word *)realloc(vocab, (vocab_size + 1) * sizeof(struct vocab_word));// reallocating after removing less frequent words, reducing space in use
 }
 
 void VocabFromTrainFile(){
