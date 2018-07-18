@@ -1,13 +1,13 @@
 #include "parser.h"
 
 long long int table_size = 100000000;
-long long int *table;
+int *table;
 
 void initUnigram(){
   printf("Creating unigram table\n");
   double train_words_pow = 0;
   double d1,power = 0.75;
-  table = (long long int *)malloc(table_size*sizeof(long long int));
+  table = (int *)malloc(table_size*sizeof(int));
   int a=0;
   for(a=0;a<vocab_size;a++) train_words_pow += pow(vocab[a].cnt, power);
   int i=0;
